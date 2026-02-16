@@ -1,7 +1,36 @@
-networks:
-  dawarich:
-
 services:
+  traefik:
+    image: traefik:v3.6.5
+    container_name: traefik
+    restart: unless-stopped
+    command:
+      - "--configFile=/etc/traefik/traefik.yml"
+    ports:
+      - "10080:80"
+      - "10443:443"
+    environment:
+      - CF_DNS_API_TOKEN=${CF_API_TOKEN}
+    volumes:
+      - ./traefik:/etc/traefik
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - dawarich_public_facing
+  photon:
+    image: rtuszik/photon-docker:latest
+    environment:
+      - UPDATE_STRATEGY=PARALLEL
+      - UPDATE_INTERVAL=720h # Check for updates every 30 days
+      - REGION=in # Optional: specific region (continent, country, or planet)
+      - PHOTON_PARAMS=-listen-ip 0.0.0.0
+      # - APPRISE_URLS=pover://user@token  # Optional: notifications
+    volumes:
+      - ./photon_data:/photon/data
+    restart: unless-stopped
+    ports:
+      - "2322:2322"
+    networks:
+      - dawarich
+
   dawarich_redis:
     image: redis:7.4-alpine
     container_name: dawarich_redis
@@ -51,8 +80,9 @@ services:
       - dawarich_db_data:/dawarich_db_data
     networks:
       - dawarich
-    ports:
-      - "${DAWARICH_APP_PORT:-3000}:3000"
+      - dawarich_public_facing
+#    ports:
+      # - "${DAWARICH_APP_PORT:-3000}:3000"
       # - "${PROMETHEUS_PORT:-9394}:9394" # Prometheus exporter, uncomment if needed
     stdin_open: true
     tty: true
@@ -60,6 +90,7 @@ services:
     command: ['bin/rails', 'server', '-p', '3000', '-b', '::']
     restart: on-failure
     environment:
+      DOMAIN: ${DOMAIN}
       RAILS_ENV: ${RAILS_ENV:-development}
       REDIS_URL: ${REDIS_URL:-redis://dawarich_redis:6379}
       DATABASE_HOST: ${DATABASE_HOST:-dawarich_db}
@@ -77,6 +108,13 @@ services:
       RAILS_LOG_TO_STDOUT: ${RAILS_LOG_TO_STDOUT:-true}
       SELF_HOSTED: ${SELF_HOSTED:-true}
       STORE_GEODATA: ${STORE_GEODATA:-true}
+      SMTP_SERVER: ${SMTP_SERVER}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_DOMAIN: ${SMTP_DOMAIN}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM}
+      SMTP_STARTTLS: ${SMTP_STARTTLS}
     logging:
       driver: "json-file"
       options:
@@ -99,7 +137,15 @@ services:
       resources:
         limits:
           cpus: ${APP_CPU_LIMIT:-0.50}
-          memory: ${APP_MEMORY_LIMIT:-4G}
+          memory: ${APP_MEMORY_LIMIT:-2G}
+    labels:
+      - "traefik.enable=true"
+
+      - "traefik.http.routers.dawarich.rule=Host(`timeline.writeskewlabs.com`)"
+      - "traefik.http.routers.dawarich.entrypoints=websecure"
+      - "traefik.http.routers.dawarich.tls.certresolver=letsencrypt"
+
+      - "traefik.http.services.dawarich.loadbalancer.server.port=3000"
 
   dawarich_sidekiq:
     image: freikin/dawarich:latest
@@ -116,6 +162,7 @@ services:
     command: ['sidekiq']
     restart: on-failure
     environment:
+      DOMAIN: ${DOMAIN}
       RAILS_ENV: ${RAILS_ENV:-development}
       REDIS_URL: ${REDIS_URL:-redis://dawarich_redis:6379}
       DATABASE_HOST: ${DATABASE_HOST:-dawarich_db}
@@ -133,6 +180,13 @@ services:
       RAILS_LOG_TO_STDOUT: ${RAILS_LOG_TO_STDOUT:-true}
       SELF_HOSTED: ${SELF_HOSTED:-true}
       STORE_GEODATA: ${STORE_GEODATA:-true}
+      SMTP_SERVER: ${SMTP_SERVER}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_DOMAIN: ${SMTP_DOMAIN}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM}
+      SMTP_STARTTLS: ${SMTP_STARTTLS}
     logging:
       driver: "json-file"
       options:
@@ -161,3 +215,8 @@ volumes:
   dawarich_public:
   dawarich_watched:
   dawarich_storage:
+
+networks:
+  dawarich:
+  dawarich_public_facing:
+    external: true
