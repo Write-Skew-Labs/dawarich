@@ -88,3 +88,4 @@ node_modules/
 
 .claude
 docker/traefik/acme.json
+.worktrees/

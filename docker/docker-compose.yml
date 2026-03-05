@@ -91,7 +91,7 @@ services:
     restart: on-failure
     environment:
       DOMAIN: ${DOMAIN}
-      RAILS_ENV: ${RAILS_ENV:-development}
+      RAILS_ENV: ${RAILS_ENV:-production}
       REDIS_URL: ${REDIS_URL:-redis://dawarich_redis:6379}
       DATABASE_HOST: ${DATABASE_HOST:-dawarich_db}
       DATABASE_PORT: ${DATABASE_PORT:-5432}
@@ -163,7 +163,7 @@ services:
     restart: on-failure
     environment:
       DOMAIN: ${DOMAIN}
-      RAILS_ENV: ${RAILS_ENV:-development}
+      RAILS_ENV: ${RAILS_ENV:-production}
       REDIS_URL: ${REDIS_URL:-redis://dawarich_redis:6379}
       DATABASE_HOST: ${DATABASE_HOST:-dawarich_db}
       DATABASE_PORT: ${DATABASE_PORT:-5432}
