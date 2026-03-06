@@ -89,3 +89,4 @@ node_modules/
 .claude
 docker/traefik/acme.json
 .worktrees/
+photon_data/

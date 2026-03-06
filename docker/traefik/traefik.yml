@@ -16,6 +16,7 @@ providers:
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false
     network: dawarich_public_facing
+    constraints: "Label(`traefik.stack`, `dawarich`)"
 
 api:
   dashboard: true

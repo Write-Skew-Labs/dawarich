@@ -1,7 +1,7 @@
 services:
   traefik:
     image: traefik:v3.6.5
-    container_name: traefik
+    container_name: traefik_dawarich
     restart: unless-stopped
     command:
       - "--configFile=/etc/traefik/traefik.yml"
@@ -15,21 +15,21 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - dawarich_public_facing
-  photon:
-    image: rtuszik/photon-docker:latest
-    environment:
-      - UPDATE_STRATEGY=PARALLEL
-      - UPDATE_INTERVAL=720h # Check for updates every 30 days
-      - REGION=in # Optional: specific region (continent, country, or planet)
-      - PHOTON_PARAMS=-listen-ip 0.0.0.0
+#  photon:
+#    image: rtuszik/photon-docker:latest
+#    environment:
+#      - UPDATE_STRATEGY=PARALLEL
+#      - UPDATE_INTERVAL=720h # Check for updates every 30 days
+#      - REGION=in # Optional: specific region (continent, country, or planet)
+#      - PHOTON_PARAMS=-listen-ip 0.0.0.0
       # - APPRISE_URLS=pover://user@token  # Optional: notifications
-    volumes:
-      - ./photon_data:/photon/data
-    restart: unless-stopped
-    ports:
-      - "2322:2322"
-    networks:
-      - dawarich
+#    volumes:
+#      - ./photon_data:/photon/data
+#    restart: unless-stopped
+#    ports:
+#      - "2322:2322"
+#    networks:
+#      - dawarich
 
   dawarich_redis:
     image: redis:7.4-alpine
@@ -140,7 +140,7 @@ services:
           memory: ${APP_MEMORY_LIMIT:-2G}
     labels:
       - "traefik.enable=true"
-
+      - "traefik.stack=dawarich"
       - "traefik.http.routers.dawarich.rule=Host(`timeline.writeskewlabs.com`)"
       - "traefik.http.routers.dawarich.entrypoints=websecure"
       - "traefik.http.routers.dawarich.tls.certresolver=letsencrypt"
